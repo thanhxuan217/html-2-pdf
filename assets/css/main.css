@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom tree styles */
+.tree-node {
+  @apply relative;
+}
+
+.tree-node::before {
+  @apply absolute top-0 left-3 w-px bg-gray-200;
+  content: '';
+  height: 100%;
+}
+
+.tree-node:last-child::before {
+  height: 50%;
+}
+
+/* Smooth transitions */
+.tree-expand-enter-active,
+.tree-expand-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.tree-expand-enter-from,
+.tree-expand-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

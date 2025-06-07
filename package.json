@@ -1,0 +1,48 @@
+{
+  "name": "link-tree-viewer-nuxt",
+  "version": "1.0.0",
+  "description": "Ứng dụng Nuxt.js để quét và hiển thị cấu trúc link từ trang web dưới dạng cây",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^1.3.9",
+    "@nuxtjs/tailwindcss": "^6.12.1",
+    "@types/node": "^20.14.9",
+    "nuxt": "^3.12.3",
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "@headlessui/vue": "^1.7.22",
+    "@heroicons/vue": "^2.1.4",
+    "@types/charset": "^1.0.5",
+    "@vueuse/core": "^10.11.0",
+    "@vueuse/nuxt": "^10.11.0",
+    "axios": "^1.7.2",
+    "charset": "^1.0.1",
+    "cheerio": "^1.0.0-rc.12",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "pinia": "^3.0.3",
+    "puppeteer": "^24.10.0",
+    "vue": "^3.4.31",
+    "vue-router": "^4.4.0",
+    "vue-tsc": "^2.2.10"
+  },
+  "keywords": [
+    "nuxt",
+    "vue",
+    "composition-api",
+    "link-crawler",
+    "web-scraper",
+    "tree-view"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

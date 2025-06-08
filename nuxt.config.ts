@@ -30,5 +30,6 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Manage and organize URLs in a tree structure' }
       ]
     }
-  }
+  },
+  ssr: false
 })

@@ -223,61 +223,30 @@
           </div>
         </div>
       </div>
-
-      <!-- Selected URLs Tree Panel -->
-      <div class="bg-white rounded-lg shadow-md p-6 mt-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Selected URLs Tree Structure</h2>
-          <div class="flex gap-2">
-            <button
-              v-if="selectedUrlsTree.length > 0"
-              @click="expandAllSelected"
-              class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
-            >
-              {{ allSelectedExpanded ? 'Collapse All' : 'Expand All' }}
-            </button>
-            <button
-              v-if="selectedUrls.length > 0"
-              @click="downloadAsPdf"
-              :disabled="downloadLoading"
-              class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-            >
-              {{ downloadLoading ? 'Generating PDF...' : `Download ${selectedUrls.length} URLs as PDF` }}
-            </button>
-          </div>
-        </div>
-        
-        <div v-if="selectedUrlsTree.length > 0" class="space-y-2 max-h-96 overflow-y-auto">
-          <!-- <SelectedTreeNode
-            v-for="node in selectedUrlsTree"
-            :key="node.id"
-            :node="node"
-            @remove="removeFromSelected"
-            @expand="toggleSelectedExpand"
-          /> -->
-          {{ selectedUrlsTree }}
-        </div>
-        <div v-else class="text-gray-500 text-center py-8">
-          No URLs selected for download
-        </div>
-      </div>
+      <SelectedUrlTree
+        :selected-urls-tree="selectedUrlsTree"
+        :url-count="selectedUrls.length"
+        @remove-from-selected="removeFromSelected"
+        @toggleSelectedExpand="toggleSelectedExpand"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import { TrashIcon, ChevronRightIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, watch } from 'vue'
 import type { UrlNode, SelectedUrl, SelectedTreeNode } from '~/types'
+import _ from 'lodash'
+import SelectedUrlTree from '~/components/SelectedUrlTree.vue'
 
 // Reactive data
 const inputUrl = ref('')
 const loading = ref(false)
-const downloadLoading = ref(false)
 const error = ref('')
 const urlTree = ref<UrlNode[]>([])
 const selectedNode = ref<UrlNode | null>(null)
 const selectedUrls = ref<SelectedUrl[]>([])
+const selectedUrlsTree = ref<SelectedTreeNode[]>([])
 
 // Filter states
 const filterText = ref('')
@@ -290,9 +259,6 @@ const showPreview = ref(true)
 const previewLoading = ref(false)
 const previewError = ref(false)
 const previewKey = ref(0)
-
-// Selected tree states
-const allSelectedExpanded = ref(false)
 
 // Computed properties
 const totalUrls = computed(() => {
@@ -370,23 +336,21 @@ const filteredUrlTree = computed(() => {
   return filterNodes(urlTree.value)
 })
 
-// Selected URLs Tree Structure
-const selectedUrlsTree = computed(() => {
+watch(selectedUrls, (newSelectedUrls) => {
   const tree: SelectedTreeNode[] = []
   const nodeMap = new Map<string, SelectedTreeNode>()
-  
   // Create nodes and build map
-  selectedUrls.value.forEach(item => {
+  newSelectedUrls.forEach(item => {
     const node: SelectedTreeNode = {
       ...item,
       children: [],
-      isExpanded: false
+      isExpanded: true
     }
     nodeMap.set(item.id, node)
   })
   
   // Build tree structure
-  selectedUrls.value.forEach(item => {
+  newSelectedUrls.forEach(item => {
     const node = nodeMap.get(item.id)!
     
     if (item.parentUrl) {
@@ -419,7 +383,9 @@ const selectedUrlsTree = computed(() => {
   }
   
   sortNodes(tree)
-  return tree
+  selectedUrlsTree.value = tree
+}, {
+  deep: true
 })
 
 // Helper functions
@@ -721,6 +687,7 @@ const addToSelected = () => {
 }
 
 const removeFromSelected = (id: string) => {
+  console.log('parent id:' ,id)
   selectedUrls.value = selectedUrls.value.filter(item => item.id !== id)
   
   // Also update the corresponding node in the tree
@@ -742,31 +709,6 @@ const isAlreadySelected = (id: string) => {
   return selectedUrls.value.some(item => item.id === id)
 }
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date)
-}
-
-const expandAllSelected = () => {
-  allSelectedExpanded.value = !allSelectedExpanded.value
-  
-  const toggleExpansion = (nodes: SelectedTreeNode[]) => {
-    nodes.forEach(node => {
-      node.isExpanded = allSelectedExpanded.value
-      if (node.children.length > 0) {
-        toggleExpansion(node.children)
-      }
-    })
-  }
-  
-  toggleExpansion(selectedUrlsTree.value)
-}
-
 const toggleSelectedExpand = (nodeId: string) => {
   const findAndToggle = (nodes: SelectedTreeNode[]): boolean => {
     for (const node of nodes) {
@@ -784,59 +726,6 @@ const toggleSelectedExpand = (nodeId: string) => {
   findAndToggle(selectedUrlsTree.value)
 }
 
-const downloadAsPdf = async () => {
-  
-}
-  // if (selectedUrls.value.length === 0) return
-  
-  // downloadLoading.value = true
-  
- 
-  //   // Import jsPDF dynamically
-  //   const { jsPDF } = await import('jspdf')
-  //   const pdf = new jsPDF()
-    
-  //   // Add title
-  //   pdf.setFontSize(20)
-  //   pdf.text('Selected URLs Tree Report', 20, 30)
-    
-  //   // Add generated date
-  //   pdf.setFontSize(12)
-  //   pdf.text(`Generated: ${formatDate(new Date())}`, 20, 45)
-    
-  //   let yPosition = 65
-    
-  //   // Sort URLs by level and added date
-  //   const sortedUrls = [...selectedUrls.value].sort((a, b) => {
-  //     if (a.level !== b.level) {
-  //       return a.level - b.level
-  //     }
-  //     return a.addedAt.getTime() - b.addedAt.getTime()
-  //   })
-    
-  //   sortedUrls.forEach((item, index) => {
-  //     if (yPosition > 250) {
-  //       pdf.addPage()
-  //       yPosition = 30
-  //     }
-      
-  //     // Add indentation based on level
-  //     const indent = 20 + (item.level * 10)
-      
-  //     // Add URL title with level indicator
-  //     pdf.setFontSize(14)
-  //     const levelPrefix = '  '.repeat(item.level) + (item.level > 0 ? '└─ ' : '')
-  //     pdf.text(`${index + 1}. ${levelPrefix}${item.title}`, indent, yPosition)
-  //     yPosition += 10
-      
-  //     // Add URL
-  //     pdf.setFontSize(10)
-  //     pdf.text(item.url, indent + 5, yPosition)
-  //     yPosition += 8
-      
-  //     // Add parent URL if exists
-  //   })
-// Preview methods
 const togglePreview = () => {
   showPreview.value = !showPreview.value
 }

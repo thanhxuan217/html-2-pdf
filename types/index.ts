@@ -47,3 +47,13 @@ export interface SelectedTreeNode {
   children: SelectedTreeNode[]
   isExpanded: boolean
 }
+
+
+// Thêm vào data() hoặc reactive state
+interface ComponentData {
+  showConfirmModal: boolean;
+  downloadLoading: boolean;
+  selectedUrls: string[];
+  selectedUrlsTree: any[];
+  allSelectedExpanded: boolean;
+}

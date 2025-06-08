@@ -2,10 +2,18 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import type { ExtractUrlsResponse } from '~/types'
 
+import { translate } from '@vitalets/google-translate-api';
+
+async function translateText(text: string) {
+  // Translates some text into Russian
+  const translattion = await translate(text, { to: 'en' });
+  return translattion.text;
+}
+
 export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> => {
   try {
     const { url } = await readBody(event)
-    
+
     if (!url) {
       throw createError({
         statusCode: 400,
@@ -51,11 +59,10 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
     const baseUrl = new URL(url)
     const urls: Array<{ url: string, text: string, type: 'internal' | 'external' }> = []
 
-    // Extract all links
-    $('a[href]').each((_, element) => {
+    const elements = $('a[href]').toArray()
+    for await (const element of elements) {
       const href = $(element).attr('href')
       let text = $(element).text().trim()
-      
       // If no text, try to get from title or aria-label
       if (!text) {
         text = $(element).attr('title') || $(element).attr('aria-label') || href || 'Unknown'
@@ -65,7 +72,7 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
         try {
           let fullUrl: string
           let urlType: 'internal' | 'external' = 'internal'
-          
+
           if (href.startsWith('http')) {
             fullUrl = href
             const linkUrl = new URL(href)
@@ -79,10 +86,10 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
             urlType = 'internal'
           } else if (href.startsWith('#')) {
             // Skip anchor links
-            return
+            continue
           } else if (href.includes('mailto:') || href.includes('tel:') || href.includes('javascript:')) {
             // Skip non-page links
-            return
+            continue
           } else {
             // Relative URL
             fullUrl = new URL(href, url).href
@@ -91,16 +98,17 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
 
           // Additional filtering
           const urlObj = new URL(fullUrl)
-          
+
           // Skip common file extensions that aren't web pages
           const fileExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.exe', '.dmg', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.mp4', '.mp3', '.avi']
           const hasFileExtension = fileExtensions.some(ext => urlObj.pathname.toLowerCase().endsWith(ext))
-          
+
           if (!hasFileExtension) {
-            urls.push({ 
-              url: fullUrl, 
-              text: text.substring(0, 200), // Limit text length
-              type: urlType 
+            const translatedText = await translateText(text)
+            urls.push({
+              url: fullUrl,
+              text: text + '|' + translatedText, // Limit text length
+              type: urlType
             })
           }
         } catch (e) {
@@ -108,11 +116,11 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
           console.warn('Invalid URL:', href, e)
         }
       }
-    })
+    }
 
     // Remove duplicates and sort
     const uniqueUrls = urls
-      .filter((item, index, self) => 
+      .filter((item, index, self) =>
         index === self.findIndex(t => t.url === item.url)
       )
       .sort((a, b) => {
@@ -129,7 +137,7 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
     }
   } catch (error: any) {
     console.error('Extract URLs error:', error.message)
-    
+
     if (error.response?.status === 404) {
       throw createError({
         statusCode: 404,
@@ -151,7 +159,7 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
         statusMessage: 'Request timeout'
       })
     }
-    
+
     throw createError({
       statusCode: error.response?.status || 500,
       statusMessage: error.message || 'Failed to extract URLs'

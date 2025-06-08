@@ -23,6 +23,7 @@
     "@heroicons/vue": "^2.1.4",
     "@types/charset": "^1.0.5",
     "@types/lodash": "^4.17.17",
+    "@vitalets/google-translate-api": "^9.2.1",
     "@vueuse/core": "^10.11.0",
     "@vueuse/nuxt": "^10.11.0",
     "axios": "^1.7.2",

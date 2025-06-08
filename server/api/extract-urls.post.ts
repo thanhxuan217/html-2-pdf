@@ -2,14 +2,6 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import type { ExtractUrlsResponse } from '~/types'
 
-import { translate } from '@vitalets/google-translate-api';
-
-async function translateText(text: string) {
-  // Translates some text into Russian
-  const translattion = await translate(text, { to: 'en' });
-  return translattion.text;
-}
-
 export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> => {
   try {
     const { url } = await readBody(event)
@@ -59,6 +51,8 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
     const baseUrl = new URL(url)
     const urls: Array<{ url: string, text: string, type: 'internal' | 'external' }> = []
 
+    // web worker ??
+
     const elements = $('a[href]').toArray()
     for await (const element of elements) {
       const href = $(element).attr('href')
@@ -104,10 +98,11 @@ export default defineEventHandler(async (event): Promise<ExtractUrlsResponse> =>
           const hasFileExtension = fileExtensions.some(ext => urlObj.pathname.toLowerCase().endsWith(ext))
 
           if (!hasFileExtension) {
-            const translatedText = await translateText(text)
+            // const translatedText = await translateText(text)
+            const decodedUrl = decodeURIComponent(fullUrl);
             urls.push({
-              url: fullUrl,
-              text: text + '|' + translatedText, // Limit text length
+              url: decodedUrl,
+              text,
               type: urlType
             })
           }
